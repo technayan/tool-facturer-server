@@ -75,12 +75,21 @@ async function run () {
             res.send({result, token});
         });
 
-        // Orders API
+        // Create Orders API
         app.post('/orders', async (req, res) => {
             const order = req.body;
             const result = await orderCollection.insertOne(order);
 
             res.send(result);
+        })
+
+        // Get Orders API
+        app.get('/orders/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = {userEmail: email};
+            const orders = await orderCollection.find(query).toArray();
+
+            res.send(orders);
         })
     }
     finally {
