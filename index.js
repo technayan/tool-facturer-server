@@ -51,7 +51,37 @@ async function run () {
             res.send(products); 
         });
 
-        
+        // Single Product API
+        app.get('/products/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = {_id: ObjectId(id)};
+            const result = await productCollection.findOne(query);
+
+            res.send(result);
+        })
+
+        // Create User API with JWT
+        app.put('/user/:email', async (req, res) => {
+            const email = req.params.email;
+            const user = req.body;
+            const filter = {email: email};
+            const options = {upsert: true};
+            const updateDoc = {
+                $set: user,
+            }
+            const result = await userCollection.updateOne(filter, updateDoc, options);
+            const token = jwt.sign({email: email}, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+
+            res.send({result, token});
+        });
+
+        // Orders API
+        app.post('/orders', async (req, res) => {
+            const order = req.body;
+            const result = await orderCollection.insertOne(order);
+
+            res.send(result);
+        })
     }
     finally {
 
@@ -59,9 +89,6 @@ async function run () {
 }
 
 run();
-
-
-
 
 app.listen(port, () => {
     console.log('Listening to the port', port);
