@@ -3,6 +3,7 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -43,6 +44,7 @@ async function run () {
         const productCollection = client.db('tool-facturer').collection('products');
         const userCollection = client.db('tool-facturer').collection('users');
         const orderCollection = client.db('tool-facturer').collection('orders');
+        const paymentCollection = client.db('tool-facturer').collection('payments');
 
         // All Products API
         app.get('/products', async (req, res) => {
@@ -88,8 +90,8 @@ async function run () {
             res.send(result);
         })
 
-        // Get Orders API
-        app.get('/orders/:email', verifyJWT, async (req, res) => {
+        // Get Orders by Email API
+        app.get('/orders/:email', verifyJWT,async (req, res) => {
             const email = req.params.email;
             const query = {userEmail: email};
             const orders = await orderCollection.find(query).toArray();
@@ -97,12 +99,52 @@ async function run () {
             res.send(orders);
         })
 
+        app.get('/order/:id', verifyJWT, async (req, res) => {
+            const orderId = req.params.id;
+            const query = {_id: ObjectId(orderId)};
+            const result = await orderCollection.findOne(query);
+
+            res.send(result);
+        })
+
+        // Create Payment Intent API
+        app.post("/create-payment-intent", verifyJWT, async (req, res) => {
+            const order = req.body;
+            const price = order.totalPrice;
+            const amount = price * 100;
+          
+            // Create a PaymentIntent with the order amount and currency
+            const paymentIntent = await stripe.paymentIntents.create({
+              amount: amount,
+              currency: "usd",
+              payment_method_types:["card"]
+            });
+            res.send({clientSecret : paymentIntent.client_secret});
+        });
+
+        // Update Order API
+        app.patch('/order/:id', verifyJWT, async(req, res) => {
+            const id = req.params.id;
+            const payment = req.body;
+            console.log()
+            const filter = {_id: ObjectId(id)};
+            const updateDoc = {
+                $set: {
+                    status: 'Paid',
+                    transactionId: payment.transactionId
+                }
+            }
+            const result = await paymentCollection.insertOne(payment);
+            const updatedOrder = await orderCollection.updateOne(filter, updateDoc);
+            
+            res.send(updatedOrder); 
+        })
+
         // Delete Order API
         app.delete('/orders/:id', verifyJWT, async (req, res) => {
             const orderId = req.params.id;
             const userEmail = req.decoded.email;
             const query = {_id: ObjectId(orderId), userEmail: userEmail};
-            console.log(query);
             const result = await orderCollection.deleteOne(query);
 
             res.send(result);
