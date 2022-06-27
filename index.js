@@ -52,7 +52,7 @@ async function run () {
         });
 
         // Single Product API
-        app.get('/products/:id', async (req, res) => {
+        app.get('/products/:id', verifyJWT, async (req, res) => {
             const id = req.params.id;
             const query = {_id: ObjectId(id)};
             const result = await productCollection.findOne(query);
@@ -76,7 +76,7 @@ async function run () {
         });
 
         // Create Orders API
-        app.post('/orders', async (req, res) => {
+        app.post('/orders', verifyJWT, async (req, res) => {
             const order = req.body;
             const result = await orderCollection.insertOne(order);
 
@@ -84,7 +84,7 @@ async function run () {
         })
 
         // Get Orders API
-        app.get('/orders/:email', async (req, res) => {
+        app.get('/orders/:email', verifyJWT, async (req, res) => {
             const email = req.params.email;
             const query = {userEmail: email};
             const orders = await orderCollection.find(query).toArray();
