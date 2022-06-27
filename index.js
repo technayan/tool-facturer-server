@@ -46,8 +46,14 @@ async function run () {
 
         // All Products API
         app.get('/products', async (req, res) => {
-            const query = {}
-            const products = await productCollection.find(query).toArray();
+            const products = await productCollection.find().toArray();
+            const orders = await orderCollection.find().toArray();
+            products.forEach(product => {
+                const orderedProducts = orders.filter(order => order.productName === product.name);
+                const orderedQnt = orderedProducts.map(orderedProduct => orderedProduct.orderQuantity);
+                const availableQuantity = product.availableQnt - orderedQnt;
+                product.availableQnt = availableQuantity; 
+            })
             res.send(products); 
         });
 
