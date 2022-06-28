@@ -103,6 +103,7 @@ async function run () {
             res.send(orders);
         })
 
+        // Get Order by id APi
         app.get('/order/:id', verifyJWT, async (req, res) => {
             const orderId = req.params.id;
             const query = {_id: ObjectId(orderId)};
@@ -161,6 +162,14 @@ async function run () {
 
             res.send(result);
         })
+
+        // Review API
+        app.get('/reviews', verifyJWT, async (req, res) => {
+            const result = await reviewCollection.find().toArray();
+
+            res.send(result);
+        })
+
     }
     finally {
 
