@@ -186,8 +186,19 @@ async function run () {
             res.send(result);
         })
 
+        // Verify Admin Middleware
+        const verifyAdmin = async (req, res, next) => {
+            const requesterEmail = req.decoded.email;
+            const requesterUser = await userCollection.findOne({email: requesterEmail});
+            if(requesterUser.role === 'admin') {
+                next();
+            } else {
+                return res.status(403).send({message: 'Forbidden Access'});
+            }
+        }
+
         // Make User Admin API
-        app.put('/user/admin/:email', verifyJWT, async (req, res) => {
+        app.put('/user/admin/:email', verifyJWT, verifyAdmin, async (req, res) => {
             const email = req.params.email;
             const filter = {email: email};
             const updateDoc = {
@@ -197,6 +208,14 @@ async function run () {
             res.send(result);
         })
 
+        //  Check User Role API
+        app.get('/users/:email', verifyJWT, async (req, res) => {
+            const email = req.params.email;
+            const query = {email: email};
+            const result = await userCollection.findOne(query);
+            const isAdmin = result?.role === 'admin';
+            res.send({admin: isAdmin});
+        })
     }
     finally {
 
