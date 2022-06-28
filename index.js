@@ -44,6 +44,7 @@ async function run () {
         const productCollection = client.db('tool-facturer').collection('products');
         const userCollection = client.db('tool-facturer').collection('users');
         const orderCollection = client.db('tool-facturer').collection('orders');
+        const reviewCollection = client.db('tool-facturer').collection('reviews');
         const paymentCollection = client.db('tool-facturer').collection('payments');
 
         // All Products API
@@ -53,8 +54,11 @@ async function run () {
             products.forEach(product => {
                 const orderedProducts = orders.filter(order => order.productName === product.name);
                 const orderedQnt = orderedProducts.map(orderedProduct => orderedProduct.orderQuantity);
-                const availableQuantity = product.availableQnt - orderedQnt;
-                product.availableQnt = availableQuantity; 
+                let restQnt = product.availableQnt;
+                orderedQnt.forEach(quantity => {
+                    restQnt = restQnt - quantity;
+                })
+                product.availableQnt = restQnt; 
             })
             res.send(products); 
         });
@@ -146,6 +150,14 @@ async function run () {
             const userEmail = req.decoded.email;
             const query = {_id: ObjectId(orderId), userEmail: userEmail};
             const result = await orderCollection.deleteOne(query);
+
+            res.send(result);
+        })
+
+        // Post Review API
+        app.post('/reviews', verifyJWT, async (req, res) => {
+            const review = req.body;
+            const result = await reviewCollection.insertOne(review);
 
             res.send(result);
         })
