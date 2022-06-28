@@ -170,6 +170,33 @@ async function run () {
             res.send(result);
         })
 
+        // Users API
+        app.get('/users', async (req, res) => {
+            const result = await userCollection.find().toArray();
+
+            res.send(result);
+        })
+
+        // Delete User API
+        app.delete('/users/:id', verifyJWT, async (req, res) => {
+            const userId = req.params.id;
+            const query = {_id: ObjectId(userId)};
+            const result = await userCollection.deleteOne(query);
+
+            res.send(result);
+        })
+
+        // Make User Admin API
+        app.put('/user/admin/:email', verifyJWT, async (req, res) => {
+            const email = req.params.email;
+            const filter = {email: email};
+            const updateDoc = {
+                $set: {role: 'admin'},
+            };
+            const result = await userCollection.updateOne(filter, updateDoc);
+            res.send(result);
+        })
+
     }
     finally {
 
