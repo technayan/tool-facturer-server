@@ -47,6 +47,25 @@ async function run () {
         const reviewCollection = client.db('tool-facturer').collection('reviews');
         const paymentCollection = client.db('tool-facturer').collection('payments');
 
+        // Verify Admin Middleware
+        const verifyAdmin = async (req, res, next) => {
+            const requesterEmail = req.decoded.email;
+            const requesterUser = await userCollection.findOne({email: requesterEmail});
+            if(requesterUser.role === 'admin') {
+                next();
+            } else {
+                return res.status(403).send({message: 'Forbidden Access'});
+            }
+        }
+
+        // Add Product API
+        app.post('/products', verifyJWT, verifyAdmin, async (req, res) => {
+            const product = req.body;
+            const result = await productCollection.insertOne(product);
+
+            res.send(result);
+        })
+
         // All Products API
         app.get('/products', async (req, res) => {
             const products = await productCollection.find().toArray();
@@ -164,38 +183,27 @@ async function run () {
         })
 
         // Review API
-        app.get('/reviews', verifyJWT, async (req, res) => {
+        app.get('/reviews', async (req, res) => {
             const result = await reviewCollection.find().toArray();
 
             res.send(result);
         })
 
         // Users API
-        app.get('/users', async (req, res) => {
+        app.get('/users', verifyJWT, verifyAdmin, async (req, res) => {
             const result = await userCollection.find().toArray();
 
             res.send(result);
         })
 
         // Delete User API
-        app.delete('/users/:id', verifyJWT, async (req, res) => {
+        app.delete('/users/:id', verifyJWT, verifyAdmin, async (req, res) => {
             const userId = req.params.id;
             const query = {_id: ObjectId(userId)};
             const result = await userCollection.deleteOne(query);
 
             res.send(result);
         })
-
-        // Verify Admin Middleware
-        const verifyAdmin = async (req, res, next) => {
-            const requesterEmail = req.decoded.email;
-            const requesterUser = await userCollection.findOne({email: requesterEmail});
-            if(requesterUser.role === 'admin') {
-                next();
-            } else {
-                return res.status(403).send({message: 'Forbidden Access'});
-            }
-        }
 
         // Make User Admin API
         app.put('/user/admin/:email', verifyJWT, verifyAdmin, async (req, res) => {
