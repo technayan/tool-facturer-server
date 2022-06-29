@@ -113,6 +113,13 @@ async function run () {
             res.send(result);
         })
 
+        // Get Orders API
+        app.get('/orders',  async (req, res) => {
+            const result = await orderCollection.find().toArray();
+
+            res.send(result);
+        })
+
         // Get Orders by Email API
         app.get('/orders/:email', verifyJWT,async (req, res) => {
             const email = req.params.email;
@@ -128,6 +135,17 @@ async function run () {
             const query = {_id: ObjectId(orderId)};
             const result = await orderCollection.findOne(query);
 
+            res.send(result);
+        })
+
+        // Update Order Status API
+        app.patch('/orders/:id', verifyJWT, verifyAdmin, async (req, res) => {
+            const id = req.params.id;
+            const filter = {_id: ObjectId(id)};
+            const updateDoc = {
+                $set: {status: 'Shipped'},
+            };
+            const result = await orderCollection.updateOne(filter, updateDoc);
             res.send(result);
         })
 
@@ -169,6 +187,15 @@ async function run () {
             const orderId = req.params.id;
             const userEmail = req.decoded.email;
             const query = {_id: ObjectId(orderId), userEmail: userEmail};
+            const result = await orderCollection.deleteOne(query);
+
+            res.send(result);
+        })
+
+        // Delete Order by Admin API
+        app.delete('/orders/admin/:id', verifyJWT, verifyAdmin, async (req, res) => {
+            const orderId = req.params.id;
+            const query = {_id: ObjectId(orderId)};
             const result = await orderCollection.deleteOne(query);
 
             res.send(result);
