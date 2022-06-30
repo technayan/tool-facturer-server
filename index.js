@@ -86,9 +86,18 @@ async function run () {
         app.get('/products/:id', verifyJWT, async (req, res) => {
             const id = req.params.id;
             const query = {_id: ObjectId(id)};
-            const result = await productCollection.findOne(query);
-            
-            res.send(result);
+            const product = await productCollection.findOne(query);
+
+            const orders = await orderCollection.find().toArray();
+            const orderedProducts = orders.filter(order => order.productName === product.name);
+            const orderedQnt = orderedProducts.map(orderedProduct => orderedProduct.orderQuantity);
+            let restQnt = product.availableQnt;
+            orderedQnt.forEach(quantity => {
+                restQnt = restQnt - quantity;
+            })
+            product.availableQnt = restQnt; 
+
+            res.send(product);
         })
 
         // Delete Product API
